@@ -3,6 +3,7 @@ import time
 
 from .endpoints import CATALOG_ITEMS
 from .models.search import SearchResponse
+from .utils import parse_url_to_params
 from dacite import from_dict
 from typing import Literal, List
 
@@ -22,6 +23,7 @@ class Vinted:
 
     def search(
         self,
+        url: str = None,
         page: int = 1,
         per_page: int = 96,
         search_text: str = None,
@@ -36,6 +38,23 @@ class Vinted:
         patterns_ids: int | List[int] = None,
         material_ids: int | List[int] = None,
     ) -> SearchResponse:
+        params = {
+            "page": page,
+            "per_page": per_page,
+            "time": time.time(),
+            "search_text": search_text,
+            "catalog_ids": catalog_ids,
+            "order": order,
+            "size_ids": size_ids,
+            "brand_ids": brand_ids,
+            "status_ids": status_ids,
+            "color_ids": color_ids,
+            "patterns_ids": patterns_ids,
+            "material_ids": material_ids,
+        }
+        if url:
+            params.update(parse_url_to_params(url))
+
         response = requests.get(
             url=self.api_url + CATALOG_ITEMS,
             headers=self.headers,
