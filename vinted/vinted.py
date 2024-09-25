@@ -4,13 +4,17 @@ import time
 from .endpoints import CATALOG_ITEMS_ENDPOINT, ITEMS_ENDPOINT
 from .models.search import SearchResponse
 from .models.items import ItemsResponse
+from .models.other import Domain
 from .utils import parse_url_to_params
 from dacite import from_dict
 from typing import Literal, List
 
 
 class Vinted:
-    def __init__(self, domain: Literal["pl", "fr"] = "pl") -> None:
+    def __init__(
+        self,
+        domain: Domain = "pl",
+    ) -> None:
         self.base_url = f"https://www.vinted.{domain}"
         self.api_url = f"{self.base_url}/api/v2"
         self.headers = {
