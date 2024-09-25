@@ -1,8 +1,9 @@
 import requests
 import time
 
-from .endpoints import CATALOG_ITEMS
+from .endpoints import CATALOG_ITEMS_ENDPOINT, ITEMS_ENDPOINT
 from .models.search import SearchResponse
+from .models.items import ItemsResponse
 from .utils import parse_url_to_params
 from dacite import from_dict
 from typing import Literal, List
@@ -56,7 +57,7 @@ class Vinted:
             params.update(parse_url_to_params(url))
 
         response = requests.get(
-            url=self.api_url + CATALOG_ITEMS,
+            url=self.api_url + CATALOG_ITEMS_ENDPOINT,
             headers=self.headers,
             cookies=self.cookies,
             params={
@@ -75,3 +76,12 @@ class Vinted:
             },
         )
         return from_dict(SearchResponse, response.json())
+
+    def item_info(self, item_id: int):
+        response = requests.get(
+            url=f"{self.api_url}{ITEMS_ENDPOINT}/{item_id}",
+            headers=self.headers,
+            cookies=self.cookies,
+        )
+        data = response.json()
+        return from_dict(ItemsResponse, data)
