@@ -1,4 +1,5 @@
 from .items import Item
+from .other import Pagination
 from dataclasses import dataclass
 from typing import List, Optional
 
@@ -7,15 +8,6 @@ from typing import List, Optional
 class SearchTrackingParams:
     search_correlation_id: str
     search_session_id: str
-
-
-@dataclass
-class Pagination:
-    current_page: int
-    per_page: int
-    time: int
-    total_entries: int
-    total_pages: int
 
 
 @dataclass

@@ -1,4 +1,5 @@
 from .money import CurrencyAmount, Conversion, MethodPay, Price
+from .other import Pagination
 from .photos import PhotoHighResolution, PhotoThumbnail
 from .users import UserPhoto, DetailedUser
 from dataclasses import dataclass
@@ -219,3 +220,11 @@ class DetailedItem:
 class ItemsResponse:
     item: DetailedItem
     code: int
+
+
+@dataclass
+class UserItemsResponse:
+    code: int
+    drafts: Optional[List[DetailedItem]]
+    items: List[DetailedItem]
+    pagination: Pagination
