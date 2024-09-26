@@ -1,4 +1,3 @@
-from dataclasses import dataclass
 from typing import Literal
 
 
@@ -30,12 +29,3 @@ Domain = Literal[
 SortOption = Literal[
     "relevance", "price_high_to_low", "price_low_to_high", "newest_first"
 ]
-
-
-@dataclass
-class Pagination:
-    current_page: int
-    per_page: int
-    time: int
-    total_entries: int
-    total_pages: int

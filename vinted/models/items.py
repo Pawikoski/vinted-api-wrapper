@@ -1,5 +1,5 @@
+from .base import VintedResponse
 from .money import CurrencyAmount, Conversion, MethodPay, Price
-from .other import Pagination
 from .photos import PhotoHighResolution, PhotoThumbnail
 from .users import UserPhoto, DetailedUser
 from dataclasses import dataclass
@@ -217,14 +217,11 @@ class DetailedItem:
 
 
 @dataclass
-class ItemsResponse:
+class ItemsResponse(VintedResponse):
     item: DetailedItem
-    code: int
 
 
 @dataclass
-class UserItemsResponse:
-    code: int
+class UserItemsResponse(VintedResponse):
     drafts: Optional[List[DetailedItem]]
     items: List[DetailedItem]
-    pagination: Pagination

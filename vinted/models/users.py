@@ -1,6 +1,6 @@
+from .base import VintedResponse
 from .money import MethodPay
 from .photos import PhotoHighResolution, PhotoThumbnail
-from .other import Pagination
 from dataclasses import dataclass
 from typing import Optional, Any, List
 
@@ -180,19 +180,15 @@ class FeedbacksSummary:
 
 
 @dataclass
-class UserFeedbacksSummaryResponse:
-    code: int
+class UserFeedbacksSummaryResponse(VintedResponse):
     user_feedback_summary: FeedbacksSummary
 
 
 @dataclass
-class UserFeedbacksResponse:
-    code: int
-    pagination: Pagination
+class UserFeedbacksResponse(VintedResponse):
     user_feedbacks: List[UserFeedback]
 
 
 @dataclass
-class UserResponse:
+class UserResponse(VintedResponse):
     user: DetailedUser
-    code: int

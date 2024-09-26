@@ -1,5 +1,5 @@
+from .base import VintedResponse
 from .items import Item
-from .other import Pagination
 from dataclasses import dataclass
 from typing import List, Optional
 
@@ -11,9 +11,7 @@ class SearchTrackingParams:
 
 
 @dataclass
-class SearchResponse:
-    code: int
+class SearchResponse(VintedResponse):
     dominant_brand: Optional[str]
     items: List[Item]
-    pagination: Pagination
     search_tracking_params: SearchTrackingParams
