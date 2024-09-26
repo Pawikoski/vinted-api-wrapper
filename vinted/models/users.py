@@ -1,5 +1,6 @@
 from .money import MethodPay
 from .photos import PhotoHighResolution, PhotoThumbnail
+from .other import Pagination
 from dataclasses import dataclass
 from typing import Optional, Any, List
 
@@ -126,6 +127,69 @@ class DetailedUser:
     is_account_ban_permanent: bool
     business_account: Any
     business: bool
+
+
+@dataclass
+class ShortUser:
+    id: int
+    login: str
+    profile_url: str
+    photo: UserPhoto
+
+
+@dataclass
+class Comment:
+    comment: Optional[str]
+    user: ShortUser
+
+
+@dataclass
+class UserFeedback:
+    id: int
+    created_at_ts: str
+    item_title: str
+    item_id: int
+    feedback: str
+    rating: int
+    feedback_rate: int
+    feedback_user_id: int
+    system_feedback: bool
+    is_system_comment: Any
+    external_type: Any
+    comment: Comment
+    user_id: int
+    user: ShortUser
+    can_change: bool
+    can_delete: bool
+    created_at: str
+    can_comment: bool
+    can_change_comment: bool
+    can_delete_comment: bool
+    localization: Any
+    feedback_url: str
+
+
+@dataclass
+class FeedbacksSummary:
+    feedback_count: int
+    feedback_rating: Optional[str]
+    system_feedback_count: int
+    system_feedback_rating: Optional[str]
+    user_feedback_count: int
+    user_feedback_rating: Optional[str]
+
+
+@dataclass
+class UserFeedbacksSummaryResponse:
+    code: int
+    user_feedback_summary: FeedbacksSummary
+
+
+@dataclass
+class UserFeedbacksResponse:
+    code: int
+    pagination: Pagination
+    user_feedbacks: List[UserFeedback]
 
 
 @dataclass

@@ -5,10 +5,14 @@ from . import endpoints
 from .models.search import SearchResponse
 from .models.items import ItemsResponse, UserItemsResponse
 from .models.other import Domain, SortOption
-from .models.users import UserResponse
+from .models.users import (
+    UserResponse,
+    UserFeedbacksResponse,
+    UserFeedbacksSummaryResponse,
+)
 from .utils import parse_url_to_params
 from dacite import from_dict
-from typing import List
+from typing import List, Literal
 
 
 class Vinted:
@@ -106,7 +110,6 @@ class Vinted:
         per_page: int = 96,
         order: SortOption = "newest_first",
     ):
-
         response = requests.get(
             url=f"{self.api_url}{endpoints.USERS}/{user_id}/{endpoints.ITEMS}",
             headers=self.headers,
@@ -115,3 +118,32 @@ class Vinted:
         )
         data = response.json()
         return from_dict(UserItemsResponse, data)
+
+    def user_feedbacks(
+        self,
+        user_id: int,
+        page: int = 1,
+        per_page: int = 20,
+        by: Literal["all", "user", "system"] = "all",
+    ):
+        response = requests.get(
+            url=f"{self.api_url}{endpoints.USER_FEEDBACKS}",
+            headers=self.headers,
+            cookies=self.cookies,
+            params={"user_id": user_id, "page": page, "per_page": per_page, "by": by},
+        )
+        data = response.json()
+        return from_dict(UserFeedbacksResponse, data)
+
+    def user_feedbacks_summary(
+        self,
+        user_id: int,
+    ):
+        response = requests.get(
+            url=f"{self.api_url}{endpoints.USER_FEEDBACKS_SUMMARY}",
+            headers=self.headers,
+            cookies=self.cookies,
+            params={"user_id": user_id},
+        )
+        data = response.json()
+        return from_dict(UserFeedbacksSummaryResponse, data)

@@ -1,3 +1,5 @@
 CATALOG_ITEMS = "/catalog/items"
 ITEMS = "/items"
 USERS = "/users"
+USER_FEEDBACKS = "/user_feedbacks"
+USER_FEEDBACKS_SUMMARY = "/user_feedbacks/summary"
