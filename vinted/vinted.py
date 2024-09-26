@@ -3,12 +3,12 @@ import time
 
 from . import endpoints
 from .models.search import SearchResponse
-from .models.items import ItemsResponse
-from .models.other import Domain
+from .models.items import ItemsResponse, UserItemsResponse
+from .models.other import Domain, SortOption
 from .models.users import UserResponse
 from .utils import parse_url_to_params
 from dacite import from_dict
-from typing import Literal, List
+from typing import List
 
 
 class Vinted:
@@ -33,9 +33,7 @@ class Vinted:
         page: int = 1,
         per_page: int = 96,
         search_text: str = None,
-        order: Literal[
-            "relevance", "price_high_to_low", "price_low_to_high", "newest_first"
-        ] = "newest_first",
+        order: SortOption = "newest_first",
         catalog_ids: int | List[int] = None,
         size_ids: int | List[int] = None,
         brand_ids: int | List[int] = None,
@@ -100,3 +98,20 @@ class Vinted:
         )
         data = response.json()
         return from_dict(UserResponse, data)
+
+    def user_items(
+        self,
+        user_id: int,
+        page: int = 1,
+        per_page: int = 96,
+        order: SortOption = "newest_first",
+    ):
+
+        response = requests.get(
+            url=f"{self.api_url}{endpoints.USERS}/{user_id}/{endpoints.ITEMS}",
+            headers=self.headers,
+            cookies=self.cookies,
+            params={"page": page, "per_page": per_page, "order": order},
+        )
+        data = response.json()
+        return from_dict(UserItemsResponse, data)
