@@ -2,7 +2,7 @@ import requests
 import time
 
 from . import endpoints
-from .models.search import SearchResponse
+from .models.search import SearchResponse, UserSearchResponse
 from .models.items import ItemsResponse, UserItemsResponse
 from .models.other import Domain, SortOption
 from .models.users import (
@@ -83,6 +83,16 @@ class Vinted:
             },
         )
         return from_dict(SearchResponse, response.json())
+
+    def search_users(self, query: str, page: int = 1, per_page: int = 36):
+        response = requests.get(
+            url=f"{self.api_url}{endpoints.USERS}",
+            headers=self.headers,
+            cookies=self.cookies,
+            params={"page": page, "per_page": per_page, "search_text": query},
+        )
+        data = response.json()
+        return from_dict(UserSearchResponse, data)
 
     def item_info(self, item_id: int):
         response = requests.get(
