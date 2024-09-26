@@ -1,10 +1,11 @@
 import requests
 import time
 
-from .endpoints import CATALOG_ITEMS_ENDPOINT, ITEMS_ENDPOINT
+from . import endpoints
 from .models.search import SearchResponse
 from .models.items import ItemsResponse
 from .models.other import Domain
+from .models.users import UserResponse
 from .utils import parse_url_to_params
 from dacite import from_dict
 from typing import Literal, List
@@ -61,7 +62,7 @@ class Vinted:
             params.update(parse_url_to_params(url))
 
         response = requests.get(
-            url=self.api_url + CATALOG_ITEMS_ENDPOINT,
+            url=self.api_url + endpoints.CATALOG_ITEMS,
             headers=self.headers,
             cookies=self.cookies,
             params={
@@ -83,9 +84,19 @@ class Vinted:
 
     def item_info(self, item_id: int):
         response = requests.get(
-            url=f"{self.api_url}{ITEMS_ENDPOINT}/{item_id}",
+            url=f"{self.api_url}{endpoints.ITEMS}/{item_id}",
             headers=self.headers,
             cookies=self.cookies,
         )
         data = response.json()
         return from_dict(ItemsResponse, data)
+
+    def user_info(self, user_id: int, localize: bool = False):
+        response = requests.get(
+            url=f"{self.api_url}{endpoints.USERS}/{user_id}",
+            headers=self.headers,
+            cookies=self.cookies,
+            params={"localize": localize},
+        )
+        data = response.json()
+        return from_dict(UserResponse, data)

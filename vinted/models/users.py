@@ -126,3 +126,9 @@ class DetailedUser:
     is_account_ban_permanent: bool
     business_account: Any
     business: bool
+
+
+@dataclass
+class UserResponse:
+    user: DetailedUser
+    code: int
