@@ -43,6 +43,7 @@ class Vinted:
         endpoint: Endpoints,
         response_model: VintedResponse,
         format_values=None,
+        wanted_status_code: int = 200,
         *args,
         **kwargs,
     ):
@@ -51,8 +52,22 @@ class Vinted:
         else:
             url = self.api_url + endpoint.value
         response = self._call(method="get", url=url, *args, **kwargs)
-        json_response = response.json()
-        return from_dict(response_model, json_response)
+        if response.status_code != wanted_status_code and not kwargs.get("recursive"):
+            self.fetch_cookies()
+            return self._get(
+                endpoint=endpoint,
+                response_model=response_model,
+                format_values=format_values,
+                wanted_status_code=wanted_status_code,
+                recursive=True,
+                *args,
+                **kwargs,
+            )
+        try:
+            json_response = response.json()
+            return from_dict(response_model, json_response)
+        except requests.exceptions.JSONDecodeError:
+            return {"error": f"HTTP {response.status_code}"}
 
     def search(
         self,
