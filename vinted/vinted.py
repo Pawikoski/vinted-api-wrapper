@@ -2,7 +2,7 @@ import requests
 import time
 
 from . import endpoints
-from .models.search import SearchResponse, UserSearchResponse
+from .models.search import SearchResponse, UserSearchResponse, SearchSuggestionsResponse
 from .models.items import ItemsResponse, UserItemsResponse
 from .models.other import Domain, SortOption
 from .models.users import (
@@ -157,3 +157,13 @@ class Vinted:
         )
         data = response.json()
         return from_dict(UserFeedbacksSummaryResponse, data)
+
+    def search_suggestions(self, query: str):
+        response = requests.get(
+            url=f"{self.api_url}{endpoints.SEARCH_SUGGESTIONS}",
+            headers=self.headers,
+            cookies=self.cookies,
+            params={"query": query},
+        )
+        data = response.json()
+        return from_dict(SearchSuggestionsResponse, data)

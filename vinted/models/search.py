@@ -12,6 +12,24 @@ class SearchTrackingParams:
 
 
 @dataclass
+class SearchSuggestionParam:
+    title: List[str]
+    entity_combination: List[str]
+    source: List[str]
+    search_signals: List[str]
+
+
+@dataclass
+class SearchSuggestion:
+    title: str
+    total_score: int
+    origin_id: int
+    params: List[SearchSuggestionParam]
+    suggestion_id: int
+    suggestion_type: int
+
+
+@dataclass
 class SearchResponse(VintedResponse):
     dominant_brand: Optional[str]
     items: List[Item]
@@ -21,3 +39,8 @@ class SearchResponse(VintedResponse):
 @dataclass
 class UserSearchResponse(VintedResponse):
     users: List[DetailedUser]
+
+
+@dataclass
+class SearchSuggestionsResponse(VintedResponse):
+    search_suggestions: List[SearchSuggestion]
