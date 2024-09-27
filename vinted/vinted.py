@@ -1,8 +1,9 @@
 import requests
 import time
 
-from . import endpoints
-from .models.filters import FiltersResponse, InitializersResponse
+from .endpoints import Endpoints
+from .models.base import VintedResponse
+from .models.filters import FiltersResponse, InitializersResponse, Catalog
 from .models.items import ItemsResponse, UserItemsResponse
 from .models.other import Domain, SortOption
 from .models.search import SearchResponse, UserSearchResponse, SearchSuggestionsResponse
@@ -32,12 +33,33 @@ class Vinted:
         response = requests.get(self.base_url, headers=self.headers)
         return response.cookies
 
+    def _call(self, method: Literal["get"], *args, **kwargs):
+        return requests.request(
+            method=method, headers=self.headers, cookies=self.cookies, *args, **kwargs
+        )
+
+    def _get(
+        self,
+        endpoint: Endpoints,
+        response_model: VintedResponse,
+        format_values=None,
+        *args,
+        **kwargs,
+    ):
+        if format_values:
+            url = self.api_url + endpoint.value.format(format_values)
+        else:
+            url = self.api_url + endpoint.value
+        response = self._call(method="get", url=url, *args, **kwargs)
+        json_response = response.json()
+        return from_dict(response_model, json_response)
+
     def search(
         self,
         url: str = None,
         page: int = 1,
         per_page: int = 96,
-        search_text: str = None,
+        query: str = None,
         price_from: float = None,
         price_to: float = None,
         order: SortOption = "newest_first",
@@ -53,7 +75,7 @@ class Vinted:
             "page": page,
             "per_page": per_page,
             "time": time.time(),
-            "search_text": search_text,
+            "search_text": query,
             "price_from": price_from,
             "price_to": price_to,
             "catalog_ids": catalog_ids,
@@ -68,55 +90,20 @@ class Vinted:
         if url:
             params.update(parse_url_to_params(url))
 
-        response = requests.get(
-            url=self.api_url + endpoints.CATALOG_ITEMS,
-            headers=self.headers,
-            cookies=self.cookies,
-            params={
-                "page": page,
-                "per_page": per_page,
-                "time": time.time(),
-                "search_text": search_text,
-                "catalog_ids": catalog_ids,
-                "order": order,
-                "size_ids": size_ids,
-                "brand_ids": brand_ids,
-                "status_ids": status_ids,
-                "color_ids": color_ids,
-                "patterns_ids": patterns_ids,
-                "material_ids": material_ids,
-            },
-        )
-        return from_dict(SearchResponse, response.json())
+        return self._get(Endpoints.CATALOG_ITEMS, SearchResponse, params=params)
 
-    def search_users(self, query: str, page: int = 1, per_page: int = 36):
-        response = requests.get(
-            url=f"{self.api_url}{endpoints.USERS}",
-            headers=self.headers,
-            cookies=self.cookies,
-            params={"page": page, "per_page": per_page, "search_text": query},
-        )
-        data = response.json()
-        return from_dict(UserSearchResponse, data)
+    def search_users(
+        self, query: str, page: int = 1, per_page: int = 36
+    ) -> UserSearchResponse:
+        params = {"page": page, "per_page": per_page, "search_text": query}
+        return self._get(Endpoints.USERS, UserSearchResponse, params=params)
 
-    def item_info(self, item_id: int):
-        response = requests.get(
-            url=f"{self.api_url}{endpoints.ITEMS}/{item_id}",
-            headers=self.headers,
-            cookies=self.cookies,
-        )
-        data = response.json()
-        return from_dict(ItemsResponse, data)
+    def item_info(self, item_id: int) -> ItemsResponse:
+        return self._get(Endpoints.ITEMS, ItemsResponse, item_id)
 
-    def user_info(self, user_id: int, localize: bool = False):
-        response = requests.get(
-            url=f"{self.api_url}{endpoints.USERS}/{user_id}",
-            headers=self.headers,
-            cookies=self.cookies,
-            params={"localize": localize},
-        )
-        data = response.json()
-        return from_dict(UserResponse, data)
+    def user_info(self, user_id: int, localize: bool = False) -> UserResponse:
+        params = {"localize": localize}
+        return self._get(Endpoints.USER, UserResponse, user_id, params=params)
 
     def user_items(
         self,
@@ -124,15 +111,11 @@ class Vinted:
         page: int = 1,
         per_page: int = 96,
         order: SortOption = "newest_first",
-    ):
-        response = requests.get(
-            url=f"{self.api_url}{endpoints.USERS}/{user_id}/{endpoints.ITEMS}",
-            headers=self.headers,
-            cookies=self.cookies,
-            params={"page": page, "per_page": per_page, "order": order},
+    ) -> UserItemsResponse:
+        params = {"page": page, "per_page": per_page, "order": order}
+        return self._get(
+            Endpoints.USER_ITEMS, UserItemsResponse, user_id, params=params
         )
-        data = response.json()
-        return from_dict(UserItemsResponse, data)
 
     def user_feedbacks(
         self,
@@ -140,38 +123,27 @@ class Vinted:
         page: int = 1,
         per_page: int = 20,
         by: Literal["all", "user", "system"] = "all",
-    ):
-        response = requests.get(
-            url=f"{self.api_url}{endpoints.USER_FEEDBACKS}",
-            headers=self.headers,
-            cookies=self.cookies,
-            params={"user_id": user_id, "page": page, "per_page": per_page, "by": by},
-        )
-        data = response.json()
-        return from_dict(UserFeedbacksResponse, data)
+    ) -> UserFeedbacksResponse:
+        params = {"user_id": user_id, "page": page, "per_page": per_page, "by": by}
+        return self._get(Endpoints.USER_FEEDBACKS, UserFeedbacksResponse, params=params)
 
     def user_feedbacks_summary(
         self,
         user_id: int,
-    ):
-        response = requests.get(
-            url=f"{self.api_url}{endpoints.USER_FEEDBACKS_SUMMARY}",
-            headers=self.headers,
-            cookies=self.cookies,
-            params={"user_id": user_id},
+    ) -> UserFeedbacksSummaryResponse:
+        params = {"user_id": user_id}
+        return self._get(
+            Endpoints.USER_FEEDBACKS_SUMMARY,
+            UserFeedbacksSummaryResponse,
+            params=params,
         )
-        data = response.json()
-        return from_dict(UserFeedbacksSummaryResponse, data)
 
-    def search_suggestions(self, query: str):
-        response = requests.get(
-            url=f"{self.api_url}{endpoints.SEARCH_SUGGESTIONS}",
-            headers=self.headers,
-            cookies=self.cookies,
+    def search_suggestions(self, query: str) -> SearchSuggestionsResponse:
+        return self._get(
+            Endpoints.SEARCH_SUGGESTIONS,
+            SearchSuggestionsResponse,
             params={"query": query},
         )
-        data = response.json()
-        return from_dict(SearchSuggestionsResponse, data)
 
     def catalog_filters(
         self,
@@ -180,29 +152,21 @@ class Vinted:
         brand_ids: int | List[int] = None,
         status_ids: int | List[int] = None,
         color_ids: int | List[int] = None,
-    ):
-        response = requests.get(
-            url=f"{self.api_url}{endpoints.CATALOG_FILTERS}",
-            headers=self.headers,
-            cookies=self.cookies,
-            params={
-                "search_text": query,
-                "catalog_ids": catalog_ids,
-                "time": time.time(),
-                "brand_ids": brand_ids,
-                "status_ids": status_ids,
-                "color_ids": color_ids,
-            },
-        )
-        data = response.json()
-        return from_dict(FiltersResponse, data)
+    ) -> FiltersResponse:
+        params = {
+            "search_text": query,
+            "catalog_ids": catalog_ids,
+            "time": time.time(),
+            "brand_ids": brand_ids,
+            "status_ids": status_ids,
+            "color_ids": color_ids,
+        }
+        return self._get(Endpoints.CATALOG_FILTERS, FiltersResponse, params=params)
 
-    def catalogs_list(self):
-        response = requests.get(
-            url=f"{self.api_url}{endpoints.CATALOG_INITIALIZERS}",
-            headers=self.headers,
-            cookies=self.cookies,
+    def catalogs_list(self) -> List[Catalog]:
+        data: InitializersResponse = self._get(
+            Endpoints.CATALOG_INITIALIZERS,
+            InitializersResponse,
             params={"page": 1, "time": time.time()},
         )
-        data = from_dict(InitializersResponse, response.json())
         return data.dtos.catalogs
