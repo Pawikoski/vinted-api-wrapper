@@ -2,9 +2,10 @@ import requests
 import time
 
 from . import endpoints
-from .models.search import SearchResponse, UserSearchResponse, SearchSuggestionsResponse
+from .models.filters import FiltersResponse, InitializersResponse
 from .models.items import ItemsResponse, UserItemsResponse
 from .models.other import Domain, SortOption
+from .models.search import SearchResponse, UserSearchResponse, SearchSuggestionsResponse
 from .models.users import (
     UserResponse,
     UserFeedbacksResponse,
@@ -167,3 +168,37 @@ class Vinted:
         )
         data = response.json()
         return from_dict(SearchSuggestionsResponse, data)
+
+    def catalog_filters(
+        self,
+        query: str = None,
+        catalog_ids: int = None,
+        brand_ids: int | List[int] = None,
+        status_ids: int | List[int] = None,
+        color_ids: int | List[int] = None,
+    ):
+        response = requests.get(
+            url=f"{self.api_url}{endpoints.CATALOG_FILTERS}",
+            headers=self.headers,
+            cookies=self.cookies,
+            params={
+                "search_text": query,
+                "catalog_ids": catalog_ids,
+                "time": time.time(),
+                "brand_ids": brand_ids,
+                "status_ids": status_ids,
+                "color_ids": color_ids,
+            },
+        )
+        data = response.json()
+        return from_dict(FiltersResponse, data)
+
+    def catalogs_list(self):
+        response = requests.get(
+            url=f"{self.api_url}{endpoints.CATALOG_INITIALIZERS}",
+            headers=self.headers,
+            cookies=self.cookies,
+            params={"page": 1, "time": time.time()},
+        )
+        data = from_dict(InitializersResponse, response.json())
+        return data.dtos.catalogs

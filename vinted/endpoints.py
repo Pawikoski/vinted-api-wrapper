@@ -1,4 +1,6 @@
 CATALOG_ITEMS = "/catalog/items"
+CATALOG_FILTERS = "/catalog/filters"
+CATALOG_INITIALIZERS = "/catalog/initializers"
 ITEMS = "/items"
 USERS = "/users"
 USER_FEEDBACKS = "/user_feedbacks"
