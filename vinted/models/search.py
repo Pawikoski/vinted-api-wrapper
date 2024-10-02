@@ -6,6 +6,24 @@ from typing import List, Optional
 
 
 @dataclass
+class DominantBrand:
+    id: int
+    title: str
+    slug: str
+    favourite_count: int
+    pretty_favourite_count: str
+    item_count: int
+    pretty_item_count: str
+    is_visible_in_listings: bool
+    requires_authenticity_check: bool
+    is_luxury: bool
+    is_hvf: bool
+    path: str
+    url: str
+    is_favourite: bool
+
+
+@dataclass
 class SearchTrackingParams:
     search_correlation_id: str
     search_session_id: str
@@ -31,7 +49,7 @@ class SearchSuggestion:
 
 @dataclass
 class SearchResponse(VintedResponse):
-    dominant_brand: Optional[str]
+    dominant_brand: Optional[DominantBrand]
     items: List[Item]
     search_tracking_params: SearchTrackingParams
 
