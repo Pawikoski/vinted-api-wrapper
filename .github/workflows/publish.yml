@@ -1,4 +1,4 @@
-# This workflow uploads olx-api-wrapper to PyPI using Twine
+# This workflow uploads vinted-api-wrapper to PyPI using Twine
 
 name: pypi
 
