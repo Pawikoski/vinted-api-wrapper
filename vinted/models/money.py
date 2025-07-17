@@ -35,3 +35,9 @@ class Conversion:
 class Price:
     amount: Optional[str]
     currency_code: Optional[str]
+
+
+@dataclass
+class Discount:
+    max_percent: int
+    delivery_type: str

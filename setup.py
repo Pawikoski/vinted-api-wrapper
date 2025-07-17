@@ -12,7 +12,7 @@ setup(
     packages=find_packages(),
     url="https://github.com/Pawikoski/vinted-api-wrapper",
     python_requires=">=3.10",
-    install_requires=["cloudscraper", "dacite", "beautifulsoup4"],
+    install_requires=["cloudscraper", "dacite", "beautifulsoup4", "fake_useragent", "urllib3"],
     long_description=long_description,
     long_description_content_type="text/markdown",
     license="MIT",

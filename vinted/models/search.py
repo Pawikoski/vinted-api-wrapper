@@ -1,6 +1,7 @@
 from .base import VintedResponse
 from .items import Item
 from .users import DetailedUser
+from .money import Discount, Price
 from dataclasses import dataclass
 from typing import List, Optional
 
@@ -48,6 +49,15 @@ class SearchSuggestion:
 
 
 @dataclass
+class ShippingDetails:
+    pickup_only: bool
+    multiple_shipping_options_available: bool
+    free_shipping: bool
+    price: Optional[Price] = None
+    discount: Optional[Discount] = None
+
+
+@dataclass
 class SearchResponse(VintedResponse):
     dominant_brand: Optional[DominantBrand]
     items: List[Item]
@@ -62,3 +72,9 @@ class UserSearchResponse(VintedResponse):
 @dataclass
 class SearchSuggestionsResponse(VintedResponse):
     search_suggestions: List[SearchSuggestion]
+
+
+@dataclass
+class ShippingResponse(VintedResponse):
+    shipping_details: ShippingDetails
+    code: int

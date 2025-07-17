@@ -1,5 +1,7 @@
 import logging
 import time
+import math
+import random
 from copy import deepcopy
 from typing import List, Literal
 from urllib.parse import urlencode, urlparse, urlunparse
@@ -7,6 +9,7 @@ from urllib.parse import urlencode, urlparse, urlunparse
 import cloudscraper
 from bs4 import BeautifulSoup
 from dacite import from_dict
+from fake_useragent import UserAgent
 
 from .endpoints import Endpoints
 from .exceptions import RateLimitExceededException
@@ -14,7 +17,7 @@ from .models.base import VintedResponse
 from .models.filters import Catalog, FiltersResponse, InitializersResponse
 from .models.items import ItemsResponse, UserItemsResponse
 from .models.other import Domain, Language, SortOption
-from .models.search import SearchResponse, SearchSuggestionsResponse, UserSearchResponse
+from .models.search import SearchResponse, SearchSuggestionsResponse, UserSearchResponse, ShippingResponse
 from .models.users import (
     UserFeedbacksResponse,
     UserFeedbacksSummaryResponse,
@@ -33,6 +36,10 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 # Set default level to INFO, but users can override with logger.setLevel(logging.DEBUG)
 logger.setLevel(logging.INFO)
+
+ua = UserAgent(platforms=['windows', 'macos'], browsers=['chrome', 'firefox', 'safari'])
+# Use a consistent user agent throughout the session to avoid detection
+# Choose a recent Chrome user agent for better compatibility
 
 
 class Vinted:
@@ -59,19 +66,34 @@ class Vinted:
 
         self.base_url = f"https://www.vinted.{domain}"
         self.api_url = f"{self.base_url}/api/v2"
-        logger.debug(f"Base URL: {self.base_url}, API URL: {self.api_url}")
+        self.host = f"www.vinted.{domain}"
+        self.user_agent = ua.random
 
+        logger.debug(f"Base URL: {self.base_url}, API URL: {self.api_url}")        
+        
         self.headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
-            "Host": f"www.vinted.{domain}",
-            "Accept": "application/json, text/plain, */*",
+            # Basic request headers
+            "User-Agent": self.user_agent,
+            "Host": self.host,
+            
+            # Accept headers
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
             "Accept-Encoding": "gzip, deflate, br, zstd",
             "Accept-Language": f"{language},*;q=0.5",
+            
+            # Connection and transfer headers
             "Connection": "keep-alive",
-            "X-Requested-With": "XMLHttpRequest",
-            "Sec-Fetch-Dest": "empty",
-            "Sec-Fetch-Mode": "cors",
-            "Sec-Fetch-Site": "same-origin",
+            "TE": "Trailers",
+            
+            # Security and privacy headers
+            "DNT": "1",
+            "Sec-Fetch-Dest": "document",
+            "Sec-Fetch-Mode": "navigate",
+            "Sec-Fetch-Site": "cross-site",
+            "Upgrade-Insecure-Requests": "1",
+            
+            # Priority header
+            "Priority": "u=0, i",
         }
 
         logger.debug(f"Headers configured: {self.headers}")
@@ -113,8 +135,18 @@ class Vinted:
 
     def fetch_cookies(self):
         logger.debug(f"Fetching cookies from: {self.base_url}")
-        response = self.scraper.get(
-            self.base_url, headers=self.headers, proxies=self.proxy
+
+        headers = {
+            "User-Agent": self.user_agent,
+            "Host": self.host,
+            "Accept-Encoding": "gzip, deflate, br, zstd",
+            "Connection": "keep-alive",
+            "TE": "trailers",
+            "DNT": "1"
+        }
+
+        response = self.scraper.head(
+            f"{self.base_url}/how_it_works", headers=headers, proxies=self.proxy, allow_redirects=True
         )
         logger.info(
             f"Cookies fetched successfully, status code: {response.status_code}"
@@ -173,12 +205,17 @@ class Vinted:
         if "recursive" in kwargs:
             del kwargs["recursive"]
 
+        # Handle custom headers
+        headers = kwargs.pop("headers", self.headers)
+        if headers != self.headers:
+            logger.debug(f"Using custom headers: {headers}")
+
         logger.info(
             f"Executing {method.upper()} request to: {kwargs.get('url', 'unknown URL')}"
         )
         response = self.scraper.request(
             method=method,
-            headers=self.headers,
+            headers=headers,
             cookies=self.cookies,
             proxies=self.proxy,
             *args,
@@ -280,7 +317,7 @@ class Vinted:
         params = {
             "page": page,
             "per_page": per_page,
-            "time": time.time(),
+            "time": math.floor(time.time() - random.random() * 60 * 3),
             "search_text": query,
             "price_from": price_from,
             "price_to": price_to,
@@ -300,7 +337,14 @@ class Vinted:
             params.update(parse_url_to_params(url))
 
         logger.debug(f"Final search parameters: {params}")
-        result = self._get(Endpoints.CATALOG_ITEMS, SearchResponse, params=params)
+        
+        # Add Referer header only if url parameter is provided
+        headers = self.headers.copy()
+        if url:
+            headers["Referer"] = url
+            logger.debug(f"Added Referer header: {headers['Referer']}")
+        
+        result = self._get(Endpoints.CATALOG_ITEMS, SearchResponse, params=params, headers=headers)
         logger.info("Search completed successfully")
         return result
 
@@ -435,7 +479,41 @@ class Vinted:
             f"Catalogs list retrieved successfully, found {len(data.dtos.catalogs)} catalogs"
         )
         return data.dtos.catalogs
-
+    
+    def fetch_shipping_details(self, item_id: int) -> ShippingResponse:
+        """
+        Fetches shipping details for a specific item.
+        
+        Args:
+            item_id: The ID of the item to fetch shipping details for
+            
+        Returns:
+            ShippingResponse: Contains shipping details including pickup options, 
+                            multiple shipping options availability, free shipping status,
+                            pricing information, and potential discounts
+                            
+        Raises:
+            RateLimitExceededException: If rate limit is exceeded
+            requests.exceptions.HTTPError: If the request fails
+            
+        Example:
+            shipping = vinted.fetch_shipping_details(123456)
+            if shipping.shipping_details.free_shipping:
+                print("Free shipping available!")
+            print(f"Shipping price: {shipping.shipping_details.price.amount} {shipping.shipping_details.price.currency_code}")
+        """
+        logger.info(f"Fetching shipping details for item_id: {item_id}")
+        logger.debug(f"Requesting shipping details from endpoint: {Endpoints.SHIPPING_DETAILS.value}")
+        
+        try:
+            result = self._get(Endpoints.SHIPPING_DETAILS, ShippingResponse, item_id)
+            logger.info(f"Shipping details retrieved successfully for item_id: {item_id}")
+            logger.debug(f"Response code: {result.code}, Free shipping: {result.shipping_details.free_shipping}")
+            return result
+        except Exception as e:
+            logger.error(f"Failed to fetch shipping details for item_id {item_id}: {e}")
+            raise
+        
     def fetch_offer_description(self, url: str) -> str:
         """
         Fetches the offer description from a given Vinted item URL.
@@ -468,3 +546,6 @@ class Vinted:
         except Exception as e:
             logger.error(f"An error occurred while fetching the description: {e}")
             return None
+        
+
+        
